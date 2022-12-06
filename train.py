@@ -2,7 +2,7 @@ import argparse
 import datetime
 import os
 import traceback
-
+import wandb
 import numpy as np
 import torch
 from tensorboardX import SummaryWriter
@@ -94,7 +94,8 @@ def train(opt):
     opt.log_path = opt.log_path + f'/{opt.project}/tensorboard/'
     os.makedirs(opt.log_path, exist_ok=True)
     os.makedirs(opt.saved_path, exist_ok=True)
-
+    
+    wandb.init(project="HybridNets")
     seg_mode = MULTILABEL_MODE if params.seg_multilabel else MULTICLASS_MODE if len(params.seg_list) > 1 else BINARY_MODE
 
     train_dataset = BddDataset(
@@ -196,6 +197,7 @@ def train(opt):
     #summary(model, (1, 3, 384, 640), device='cpu')
 
     writer = SummaryWriter(opt.log_path + f'/{datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}/')
+    wandb.config('learning_rate': opt.lr, "epochs": opt.num_epochs, "batch_size": opt.batch_size)
 
     # wrap the model with loss function, to reduce the memory usage on gpu0 and speedup
     model = ModelWithLoss(model, debug=opt.debug)
@@ -279,6 +281,12 @@ def train(opt):
                             step, epoch, opt.num_epochs, iter + 1, num_iter_per_epoch, cls_loss.item(),
                             reg_loss.item(), seg_loss.item(), loss.item()))
                     writer.add_scalars('Loss', {'train': loss}, step)
+
+                    wandb.log({"step": step,"Loss": loss,
+                    'Regression_loss': reg_loss,
+                    'Classfication_loss':cls_loss,
+                     'Segmentation_loss': seg_loss})
+
                     writer.add_scalars('Regression_loss', {'train': reg_loss}, step)
                     writer.add_scalars('Classfication_loss', {'train': cls_loss}, step)
                     writer.add_scalars('Segmentation_loss', {'train': seg_loss}, step)
@@ -286,6 +294,8 @@ def train(opt):
                     # log learning_rate
                     current_lr = optimizer.param_groups[0]['lr']
                     writer.add_scalar('learning_rate', current_lr, step)
+                   
+                   
 
                     step += 1
 
