@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 from tqdm.autonotebook import tqdm
 import os
-
+import wandb
 from utils import smp_metrics
 from utils.utils import ConfusionMatrix, postprocess, scale_coords, process_batch, ap_per_class, fitness, \
     save_checkpoint, DataLoaderX, BBoxTransform, ClipBoxes, boolean_string, Params
@@ -28,6 +28,7 @@ def val(model, val_generator, params, opt, seg_mode, is_training, **kwargs):
     best_fitness = kwargs.get('best_fitness', 0)
     best_loss = kwargs.get('best_loss', 0)
     best_epoch = kwargs.get('best_epoch', 0)
+    wandb.init()
 
     loss_regression_ls = []
     loss_classification_ls = []
@@ -170,6 +171,8 @@ def val(model, val_generator, params, opt, seg_mode, is_training, **kwargs):
     print(
         'Val. Epoch: {}/{}. Classification loss: {:1.5f}. Regression loss: {:1.5f}. Segmentation loss: {:1.5f}. Total loss: {:1.5f}'.format(
             epoch, opt.num_epochs if is_training else 0, cls_loss, reg_loss, seg_loss, loss))
+    wandb.log({'val step': step,'val loss': loss,'Regression_loss':reg_loss, 'Classfication_loss': cls_loss,'Segmentation_loss': seg_loss})
+	
     if is_training:
         writer.add_scalars('Loss', {'val': loss}, step)
         writer.add_scalars('Regression_loss', {'val': reg_loss}, step)

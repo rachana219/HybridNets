@@ -197,7 +197,7 @@ def train(opt):
     #summary(model, (1, 3, 384, 640), device='cpu')
 
     writer = SummaryWriter(opt.log_path + f'/{datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}/')
-    wandb.config('learning_rate': opt.lr, "epochs": opt.num_epochs, "batch_size": opt.batch_size)
+    wandb.config = ({'learning_rate': opt.lr, "epochs": opt.num_epochs, "batch_size": opt.batch_size})
 
     # wrap the model with loss function, to reduce the memory usage on gpu0 and speedup
     model = ModelWithLoss(model, debug=opt.debug)
