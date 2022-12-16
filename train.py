@@ -43,7 +43,7 @@ def get_args():
                                                                    ' very final stage then switch to \'sgd\'')
     parser.add_argument('--num_epochs', type=int, default=500)
     parser.add_argument('--val_interval', type=int, default=1, help='Number of epoches between valing phases')
-    parser.add_argument('--save_interval', type=int, default=500, help='Number of steps between saving')
+    parser.add_argument('--save_interval', type=int, default=1000, help='Number of steps between saving')
     parser.add_argument('--es_min_delta', type=float, default=0.0,
                         help='Early stopping\'s parameter: minimum change loss to qualify as an improvement')
     parser.add_argument('--es_patience', type=int, default=0,
@@ -282,10 +282,7 @@ def train(opt):
                             reg_loss.item(), seg_loss.item(), loss.item()))
                     writer.add_scalars('Loss', {'train': loss}, step)
 
-                    wandb.log({"step": step,"Loss": loss,
-                    'Regression_loss': reg_loss,
-                    'Classfication_loss':cls_loss,
-                     'Segmentation_loss': seg_loss})
+                   
 
                     writer.add_scalars('Regression_loss', {'train': reg_loss}, step)
                     writer.add_scalars('Classfication_loss', {'train': cls_loss}, step)
@@ -309,11 +306,16 @@ def train(opt):
                     continue
 
             scheduler.step(np.mean(epoch_loss))
+            wandb.log({"step": step,"Loss": loss,
+                    'Regression_loss': reg_loss,
+                    'Classfication_loss':cls_loss,
+                     'Segmentation_loss': seg_loss})
 
             if epoch % opt.val_interval == 0:
                 best_fitness, best_loss, best_epoch = val(model, val_generator, params, opt, seg_mode, is_training=True,
                                                           optimizer=optimizer, scaler=scaler, writer=writer, epoch=epoch, step=step, 
                                                           best_fitness=best_fitness, best_loss=best_loss, best_epoch=best_epoch)
+														  
     except KeyboardInterrupt:
         save_checkpoint(model, opt.saved_path, f'hybridnets-d{opt.compound_coef}_{epoch}_{step}.pth')
     finally:
